@@ -29,16 +29,16 @@ struct EmojiArtDocumentView: View {
                         OptionalImage(uiImage: self.document.backgroundImage)
                             .scaleEffect(self.zoomScale)
                             .offset(self.panOffset)
-                            .onTapGesture {
-                                self.document.clearSelection()
-                        }
                     )
-                        .gesture(self.doubleTapToZoom(in: geometry.size))
+                        .gesture(self.doubleTapToZoom(in: geometry.size).exclusively(before: TapGesture().onEnded {
+                            self.document.clearSelection()
+                        }))
                     ForEach(self.document.emojis) { emoji in
                         Text(emoji.text)
                             .font(animatableWithSize: emoji.fontSize * self.zoomScale)
                             .border(self.document.isSelected(emoji: emoji) ? Color.gray : Color.clear)
                             .position(self.position(for: emoji, in: geometry.size))
+                            .gesture(self.dragGesture())
                             .onTapGesture {
                                 self.document.select(emoji: emoji)
                         }
@@ -72,10 +72,10 @@ struct EmojiArtDocumentView: View {
         MagnificationGesture()
             .updating($gestureZoomScale) { latestGestureScale, gestureZoomScale, transaction in
                 gestureZoomScale = latestGestureScale
-            }
-            .onEnded { finalGestureScale in
-                self.steadyStateZoomScale *= finalGestureScale
-            }
+        }
+        .onEnded { finalGestureScale in
+            self.steadyStateZoomScale *= finalGestureScale
+        }
     }
     
     @State private var steadyStatePanOffset: CGSize = .zero
@@ -94,7 +94,22 @@ struct EmojiArtDocumentView: View {
             self.steadyStatePanOffset = self.steadyStatePanOffset + (finalDragGestureValue.translation / self.zoomScale)
         }
     }
-
+    
+    @GestureState private var gestureDragOffset: CGSize = .zero
+    
+    private var dragOffset: CGSize {
+        gestureDragOffset * zoomScale
+    }
+    
+    private func dragGesture() -> some Gesture {
+        DragGesture()
+            .updating($gestureDragOffset) { latestDragGestureValue, gestureDragOffset, transaction in
+                gestureDragOffset = latestDragGestureValue.translation / self.zoomScale
+        }
+        .onEnded { finalDragGestureValue in
+            self.document.moveSelection(by: finalDragGestureValue.translation / self.zoomScale)
+        }
+    }
     
     private func doubleTapToZoom(in size: CGSize) -> some Gesture {
         TapGesture(count: 2)
@@ -102,7 +117,7 @@ struct EmojiArtDocumentView: View {
                 withAnimation {
                     self.zoomToFit(self.document.backgroundImage, in: size)
                 }
-            }
+        }
     }
     
     private func zoomToFit(_ image: UIImage?, in size: CGSize) {
@@ -113,12 +128,15 @@ struct EmojiArtDocumentView: View {
             self.steadyStateZoomScale = min(hZoom, vZoom)
         }
     }
-        
+    
     private func position(for emoji: EmojiArt.Emoji, in size: CGSize) -> CGPoint {
         var location = emoji.location
         location = CGPoint(x: location.x * zoomScale, y: location.y * zoomScale)
         location = CGPoint(x: location.x + size.width/2, y: location.y + size.height/2)
         location = CGPoint(x: location.x + panOffset.width, y: location.y + panOffset.height)
+        if document.isSelected(emoji: emoji) {
+            location = CGPoint(x: location.x + dragOffset.width, y: location.y + dragOffset.height)
+        }
         return location
     }
     

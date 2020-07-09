@@ -75,6 +75,15 @@ class EmojiArtDocument: ObservableObject
         selectedEmojis.removeAll()
     }
     
+    func moveSelection(by size: CGSize) {
+        for emoji in selectedEmojis {
+            if let index = emojiArt.emojis.firstIndex(matching: emoji) {
+                emojiArt.emojis[index].x += Int(size.width)
+                emojiArt.emojis[index].y += Int(size.height)
+            }
+        }
+    }
+    
     private func fetchBackgroundImageData() {
         backgroundImage = nil
         if let url = self.emojiArt.backgroundURL {
