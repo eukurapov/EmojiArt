@@ -35,10 +35,13 @@ struct EmojiArtDocumentView: View {
                         }))
                     ForEach(self.document.emojis) { emoji in
                         Text(emoji.text)
-                            .font(animatableWithSize: emoji.fontSize * self.zoomScale)
+                            .font(animatableWithSize: emoji.fontSize * (self.document.isSelected(emoji: emoji) ? self.selectionZoomScale : self.zoomScale))
                             .border(self.document.isSelected(emoji: emoji) ? Color.gray : Color.clear)
                             .position(self.position(for: emoji, in: geometry.size))
                             .gesture(self.dragGesture())
+                            .onTapGesture(count: 3) {
+                                self.document.removeEmoji(emoji)
+                        }
                             .onTapGesture {
                                 self.document.select(emoji: emoji)
                         }
@@ -63,18 +66,33 @@ struct EmojiArtDocumentView: View {
     
     @State private var steadyStateZoomScale: CGFloat = 1.0
     @GestureState private var gestureZoomScale: CGFloat = 1.0
+    @GestureState private var gestureSelectedZoomScale: CGFloat = 1.0
     
     private var zoomScale: CGFloat {
         steadyStateZoomScale * gestureZoomScale
     }
     
+    private var selectionZoomScale: CGFloat {
+        gestureSelectedZoomScale * zoomScale
+    }
+    
     private func zoomGesture() -> some Gesture {
-        MagnificationGesture()
-            .updating($gestureZoomScale) { latestGestureScale, gestureZoomScale, transaction in
-                gestureZoomScale = latestGestureScale
-        }
-        .onEnded { finalGestureScale in
-            self.steadyStateZoomScale *= finalGestureScale
+        if document.selectedEmojis.isEmpty {
+            return MagnificationGesture()
+                .updating($gestureZoomScale) { latestGestureScale, gestureZoomScale, transaction in
+                    gestureZoomScale = latestGestureScale
+            }
+            .onEnded { finalGestureScale in
+                self.steadyStateZoomScale *= finalGestureScale
+            }
+        } else {
+            return MagnificationGesture()
+                .updating($gestureSelectedZoomScale) { latestGestureScale, gestureSelectedZoomScale, transaction in
+                    gestureSelectedZoomScale = latestGestureScale
+            }
+            .onEnded { finalGestureScale in
+                self.document.scaleSelection(by: finalGestureScale)
+            }
         }
     }
     

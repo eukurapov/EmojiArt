@@ -41,6 +41,12 @@ class EmojiArtDocument: ObservableObject
         emojiArt.addEmoji(emoji, x: Int(location.x), y: Int(location.y), size: Int(size))
     }
     
+    func removeEmoji(_ emoji: EmojiArt.Emoji) {
+        if let index = emojiArt.emojis.firstIndex(matching: emoji) {
+            emojiArt.emojis.remove(at: index)
+        }
+    }
+    
     func moveEmoji(_ emoji: EmojiArt.Emoji, by offset: CGSize) {
         if let index = emojiArt.emojis.firstIndex(matching: emoji) {
             emojiArt.emojis[index].x += Int(offset.width)
@@ -75,12 +81,15 @@ class EmojiArtDocument: ObservableObject
         selectedEmojis.removeAll()
     }
     
+    func scaleSelection(by scale: CGFloat) {
+        for emoji in selectedEmojis {
+            self.scaleEmoji(emoji, by: scale)
+        }
+    }
+    
     func moveSelection(by size: CGSize) {
         for emoji in selectedEmojis {
-            if let index = emojiArt.emojis.firstIndex(matching: emoji) {
-                emojiArt.emojis[index].x += Int(size.width)
-                emojiArt.emojis[index].y += Int(size.height)
-            }
+            self.moveEmoji(emoji, by: size)
         }
     }
     
