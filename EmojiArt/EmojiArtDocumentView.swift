@@ -30,7 +30,7 @@ struct EmojiArtDocumentView: View {
                             .scaleEffect(self.zoomScale)
                             .offset(self.panOffset)
                     )
-                        .gesture(self.doubleTapToZoom(in: geometry.size).exclusively(before: TapGesture().onEnded {
+                        .gesture(self.doubleTapToZoom(in: geometry.size).simultaneously(with: TapGesture().onEnded {
                             self.document.clearSelection()
                         }))
                     ForEach(self.document.emojis) { emoji in
