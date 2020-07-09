@@ -38,7 +38,7 @@ struct EmojiArtDocumentView: View {
                             .font(animatableWithSize: emoji.fontSize * (self.document.isSelected(emoji: emoji) ? self.selectionZoomScale : self.zoomScale))
                             .border(self.document.isSelected(emoji: emoji) ? Color.gray : Color.clear)
                             .position(self.position(for: emoji, in: geometry.size))
-                            .gesture(self.dragGesture())
+                            .gesture(self.dragGesture(for: self.document.isSelected(emoji: emoji) ? nil : emoji))
                             .onTapGesture(count: 3) {
                                 self.document.removeEmoji(emoji)
                         }
@@ -114,18 +114,26 @@ struct EmojiArtDocumentView: View {
     }
     
     @GestureState private var gestureDragOffset: CGSize = .zero
+    @State private var draggingEmoji: EmojiArt.Emoji? = nil
     
     private var dragOffset: CGSize {
         gestureDragOffset * zoomScale
     }
     
-    private func dragGesture() -> some Gesture {
-        DragGesture()
+    private func dragGesture(for emoji: EmojiArt.Emoji? = nil) -> some Gesture {
+        return DragGesture()
+        .onChanged { _ in
+            self.draggingEmoji = emoji
+        }
             .updating($gestureDragOffset) { latestDragGestureValue, gestureDragOffset, transaction in
                 gestureDragOffset = latestDragGestureValue.translation / self.zoomScale
         }
         .onEnded { finalDragGestureValue in
-            self.document.moveSelection(by: finalDragGestureValue.translation / self.zoomScale)
+            if let emoji = emoji {
+                self.document.moveEmoji(emoji, by: finalDragGestureValue.translation / self.zoomScale)
+            } else {
+                self.document.moveSelection(by: finalDragGestureValue.translation / self.zoomScale)
+            }
         }
     }
     
@@ -152,7 +160,7 @@ struct EmojiArtDocumentView: View {
         location = CGPoint(x: location.x * zoomScale, y: location.y * zoomScale)
         location = CGPoint(x: location.x + size.width/2, y: location.y + size.height/2)
         location = CGPoint(x: location.x + panOffset.width, y: location.y + panOffset.height)
-        if document.isSelected(emoji: emoji) {
+        if document.isSelected(emoji: emoji) && draggingEmoji == nil || draggingEmoji?.id == emoji.id {
             location = CGPoint(x: location.x + dragOffset.width, y: location.y + dragOffset.height)
         }
         return location
