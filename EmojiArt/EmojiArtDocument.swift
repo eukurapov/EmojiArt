@@ -33,6 +33,8 @@ class EmojiArtDocument: ObservableObject
     
     var emojis: [EmojiArt.Emoji] { emojiArt.emojis }
     
+    @Published private(set) var selectedEmojis = Set<EmojiArt.Emoji>()
+    
     // MARK: - Intent(s)
     
     func addEmoji(_ emoji: String, at location: CGPoint, size: CGFloat) {
@@ -55,6 +57,22 @@ class EmojiArtDocument: ObservableObject
     func setBackgroundURL(_ url: URL?) {
         emojiArt.backgroundURL = url?.imageURL
         fetchBackgroundImageData()
+    }
+    
+    func isSelected(emoji: EmojiArt.Emoji) -> Bool {
+        return selectedEmojis.contains(matching: emoji)
+    }
+    
+    func select(emoji: EmojiArt.Emoji) {
+        if selectedEmojis.contains(matching: emoji) {
+            selectedEmojis.remove(emoji)
+        } else {
+            selectedEmojis.insert(emoji)
+        }
+    }
+    
+    func clearSelection() {
+        selectedEmojis.removeAll()
     }
     
     private func fetchBackgroundImageData() {

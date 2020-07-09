@@ -29,12 +29,19 @@ struct EmojiArtDocumentView: View {
                         OptionalImage(uiImage: self.document.backgroundImage)
                             .scaleEffect(self.zoomScale)
                             .offset(self.panOffset)
+                            .onTapGesture {
+                                self.document.clearSelection()
+                        }
                     )
                         .gesture(self.doubleTapToZoom(in: geometry.size))
                     ForEach(self.document.emojis) { emoji in
                         Text(emoji.text)
                             .font(animatableWithSize: emoji.fontSize * self.zoomScale)
+                            .border(self.document.isSelected(emoji: emoji) ? Color.gray : Color.clear)
                             .position(self.position(for: emoji, in: geometry.size))
+                            .onTapGesture {
+                                self.document.select(emoji: emoji)
+                        }
                     }
                 }
                 .clipped()
